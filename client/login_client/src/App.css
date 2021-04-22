@@ -1,0 +1,11 @@
+.create-account-form {
+  margin: auto;
+  width: 75%;
+  text-align: center;
+}
+
+.input-row {
+  margin: auto;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
