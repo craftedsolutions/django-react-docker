@@ -4,25 +4,26 @@
 
 - Docker can be installed from [here](https://docs.docker.com/get-docker/).
 
-## To start the app in a docker container
+on mac installing docker also installs `docker-compose`
 
-From the project root directory run `./startDocker.sh`
+## To start the docker containers
 
-This script should will do the following things:
+From the project root directory run `docker-compose up` which will start two docker containers, one for the web app and one for postgres.
 
-- Build a docker image with python 3, node 15, and django installed named ``
-- Start the container with the current project attached as a volume
-- Start up bash in the container
+## Start the web app
 
-From the container bash:
+After starting the containers the web app will not be running (since this setup is primarily meant for development), to keep the web container from terminating, there a script running that loops every 10 seconds or so.
 
-- `cd /home/myapp/mysite && ./startApp.sh`
+To start the web app:
 
-The application should be accessible [here](http://localhost:8000/admin/).
+- Start a bash session in the web container
+  - Run `docker container ls` and copy either the container id or name for image `django-react-docker_web...`
+  - Run `docker container exec -it <id or name> /bin/bash`
+- In the container bash run `./startApp.sh` and the app should be accessible [here](http://localhost:8000/admin/)
 
 ## Start up additional bash session in the container
 
-- Run `docker container ls` and copy either the container id or name for image `py_node:1.0`
+- Run `docker container ls` and copy either the container id or name for image `django-react-docker_web...`
 - Run `docker container exec -it <id or name> /bin/bash`
 
 ## React app

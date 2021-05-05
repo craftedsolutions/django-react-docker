@@ -1,19 +1,28 @@
 from django.http import JsonResponse, HttpRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
+
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from signup.usecases.create_user import CreateUser
 from signup.usecases.generate_token import GenerateToken
+from signup.usecases.get_user_details import GetUserDetails
 
-from signup.persistence.user_repo import UserRepo
+from signup.usecases.factory import UsecaseFactory
 
-from django.core.mail import send_mail
+from signup.persistence.account_repo import AccountRepo
 
 from signup.support.action_result_factory import of_success, of_failure, id
 from signup.web.create_user_validator import CreateUserValidator
 from signup.web.generate_token_validator import GetTokenValidator
 
 from signup.web.deserializer import Deserializer
+
+from signup.serializers import UserDetailsSerializer
 
 
 def deserializationErrorResponse(errorMessage):
@@ -74,7 +83,8 @@ def create_user(request):
 
 
 def errorGeneratingToken(errorMessage):
-    response = JsonResponse({'error': "failed to generate auth_token", 'message': errorMessage})
+    response = JsonResponse(
+        {'error': "failed to generate auth_token", 'message': errorMessage})
     response.status_code = 500
     return response
 
@@ -99,7 +109,7 @@ def generate_token(request):
     ).mapError(
         validationErrorResponse
     ).fmap(
-        GenerateToken(user_persistence=UserRepo).execute
+        GenerateToken(user_persistence=AccountRepo()).execute
     ).mapError(
         errorGeneratingToken
     ).ifSuccessOrElse(
@@ -107,8 +117,10 @@ def generate_token(request):
         ifError=id,
     )
 
+
 def emailConfirmed():
-    return JsonResponse({'message': "success"})
+    return Response
+
 
 @csrf_exempt
 def confirm_email(request):
@@ -131,5 +143,35 @@ def confirm_email(request):
         errorGeneratingToken
     ).ifSuccessOrElse(
         ifSuccess=emailConfirmed,
+        ifError=id,
+    )
+
+
+def errorGettingUserDetails(message):
+    return Response(
+        data={'message': ['error getting user details', message]},
+        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+    )
+
+def serializeData(userDetails):
+    serializer = UserDetailsSerializer(userDetails)
+    return Response(serializer.data)
+
+@api_view(["GET"])
+def get_user_details(request):
+    permission_classes = [IsAuthenticated]
+
+    factory = UsecaseFactory()
+
+    return of_success(
+        request.user
+    ).map(
+        lambda user : user.id
+    ).fmap(
+        factory.user_details_usecase().execute
+    ).mapError(
+        errorGettingUserDetails
+    ).ifSuccessOrElse(
+        ifSuccess=serializeData,
         ifError=id,
     )

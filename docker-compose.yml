@@ -3,6 +3,8 @@ version: "3.9"
 services:
   db:
     image: postgres
+    ports:
+      - "5432:5432"
     volumes:
       - ./data/db:/var/lib/postgresql/data
     environment:
@@ -11,7 +13,7 @@ services:
       - POSTGRES_PASSWORD=postgres
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python loop_forever.py
     working_dir: /home/myapp/mysite
     volumes:
       - .:/home/myapp
